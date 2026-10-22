@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "duoguard-agent"
+version = "1.0.0"
+description = "Autonomous DevSecOps & AST Taint Analysis Agent for GitLab Duo"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Ashok", email = "ashokwebs@users.noreply.github.com"}
+]
+keywords = ["gitlab-duo", "devsecops", "ast", "taint-analysis", "sast", "mcp-server"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Security",
+]
+
+[project.scripts]
+duoguard = "duoguard.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["duoguard*"]

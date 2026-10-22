@@ -1,0 +1,42 @@
+# .gitlab-ci.yml - DuoGuard Autonomous DevSecOps CI/CD Pipeline
+stages:
+  - test
+  - security
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - .venv/
+
+unit-tests:
+  stage: test
+  image: python:3.13-slim
+  script:
+    - python3 -m venv .venv
+    - . .venv/bin/activate
+    - pip install -r requirements.txt
+    - pytest -v tests/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+duoguard-ast-sast:
+  stage: security
+  image: python:3.13-slim
+  script:
+    - python3 -m venv .venv
+    - . .venv/bin/activate
+    - pip install -e .
+    - python -m duoguard.cli scan . --format gitlab-sast -o gl-sast-report.json --post-mr
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+    paths:
+      - gl-sast-report.json
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
