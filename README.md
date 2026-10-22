@@ -98,6 +98,13 @@ python -m duoguard.cli scan test-fixtures/sample_app --format gitlab-sast -o gl-
 
 # Markdown Summary for MR Discussions
 python -m duoguard.cli scan test-fixtures/sample_app --format markdown
+
+# Standalone Interactive HTML Executive Dashboard
+python -m duoguard.cli scan test-fixtures/sample_app --format html -o duoguard-report.html
+
+# One-Click CI/CD Configuration Initializer
+duoguard init-ci --platform gitlab  # Creates .gitlab-ci.yml
+duoguard init-ci --platform github  # Creates .github/workflows/duoguard.yml
 ```
 
 ### 3. Run Test Suite
@@ -106,7 +113,7 @@ pytest -v tests/
 ```
 Output:
 ```
-============================== 17 passed in 0.05s ==============================
+============================== 20 passed in 0.05s ==============================
 ```
 
 ---
