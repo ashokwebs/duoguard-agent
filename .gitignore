@@ -35,3 +35,4 @@ htmlcov/
 
 # Local reports
 gl-sast-report.json
+*.html
