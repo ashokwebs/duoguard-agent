@@ -136,6 +136,75 @@ def cmd_scan(args):
         sys.exit(1)
 
 
+GITLAB_CI_TEMPLATE = """# .gitlab-ci.yml - Powered by DuoGuard DevSecOps Agent
+stages:
+  - security
+
+duoguard-sast:
+  stage: security
+  image: python:3.13-slim
+  script:
+    - pip install duoguard-agent
+    - duoguard scan . --format gitlab-sast -o gl-sast-report.json --post-mr
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+    paths:
+      - gl-sast-report.json
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+"""
+
+GITHUB_WORKFLOW_TEMPLATE = """# .github/workflows/duoguard.yml
+name: DuoGuard Security Scan
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Run DuoGuard Security Audit
+        run: |
+          pip install duoguard-agent
+          duoguard scan . --format html -o duoguard-report.html --strict
+      - name: Upload Security Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: duoguard-report
+          path: duoguard-report.html
+"""
+
+
+def cmd_init_ci(args):
+    platform = args.platform.lower()
+    target_dir = Path(args.dir).resolve()
+
+    if platform == "gitlab":
+        out_file = target_dir / ".gitlab-ci.yml"
+        out_file.write_text(GITLAB_CI_TEMPLATE.strip() + "\n", encoding="utf-8")
+        print(f"\n{C.GREEN}[+] Created GitLab CI component: {out_file}{C.RESET}")
+    elif platform == "github":
+        wf_dir = target_dir / ".github" / "workflows"
+        wf_dir.mkdir(parents=True, exist_ok=True)
+        out_file = wf_dir / "duoguard.yml"
+        out_file.write_text(GITHUB_WORKFLOW_TEMPLATE.strip() + "\n", encoding="utf-8")
+        print(f"\n{C.GREEN}[+] Created GitHub Actions workflow: {out_file}{C.RESET}")
+    else:
+        print(f"{C.RED}Unsupported platform: {platform}. Choose 'gitlab' or 'github'.{C.RESET}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="DuoGuard: Autonomous DevSecOps & AST Security Agent for GitLab Duo",
@@ -156,6 +225,11 @@ def main():
     # MCP Server command
     mcp_p = subparsers.add_parser("mcp", help="Start the DuoGuard Model Context Protocol (MCP) server")
 
+    # init-ci command
+    ci_p = subparsers.add_parser("init-ci", help="Generate CI/CD pipeline configuration (gitlab or github)")
+    ci_p.add_argument("--platform", choices=["gitlab", "github"], default="gitlab", help="Target CI platform")
+    ci_p.add_argument("--dir", default=".", help="Target project root directory")
+
     args = parser.parse_args()
 
     if args.command == "scan" or (args.command is None and len(sys.argv) > 1 and not sys.argv[1].startswith("-")):
@@ -170,6 +244,8 @@ def main():
         cmd_scan(args)
     elif args.command == "mcp":
         run_mcp_server()
+    elif args.command == "init-ci":
+        cmd_init_ci(args)
     else:
         parser.print_help()
 
