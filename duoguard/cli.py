@@ -82,6 +82,13 @@ def cmd_scan(args):
         else:
             print(md)
 
+    elif args.format == "html":
+        from duoguard.html_report import generate_html_report
+        html_content = generate_html_report(findings, target)
+        out_path = Path(args.output or "duoguard-report.html").resolve()
+        out_path.write_text(html_content, encoding="utf-8")
+        print(f"\n{C.GREEN}[+] Interactive HTML Dashboard generated: {out_path}{C.RESET}")
+
     else:
         # Default: Rich Terminal Console
         print("\n" + "=" * 70)
@@ -140,7 +147,7 @@ def main():
     scan_p = subparsers.add_parser("scan", help="Scan repository or file for AST vulnerabilities and secrets")
     scan_p.add_argument("path", nargs="?", default=".", help="Target directory or file path")
     scan_p.add_argument("--repo", help="Alias for path")
-    scan_p.add_argument("--format", choices=["console", "gitlab-sast", "json", "markdown"], default="console", help="Report format")
+    scan_p.add_argument("--format", choices=["console", "gitlab-sast", "json", "markdown", "html"], default="console", help="Report format")
     scan_p.add_argument("-o", "--output", help="Output destination file path")
     scan_p.add_argument("--min-severity", choices=["CRITICAL", "HIGH", "MEDIUM", "LOW"], help="Filter by severity")
     scan_p.add_argument("--strict", action="store_true", help="Exit with non-zero status on critical/high findings")
